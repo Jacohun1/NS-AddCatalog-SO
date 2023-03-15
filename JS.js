@@ -3,12 +3,6 @@
  * @NScriptType UserEventScript
  * @NModuleScope SameAccount
  */
- 
- 
-//Current Issues that need to be addressed:
-//1. Hard coded IDs in line 73 need to be better addressed
-//2. Hard code in line 98 - this should become dynamic
-//3. The loop that runs over each item in the SO does a search every time, when it should only conduct one search
 
 // Load Necessary Modules
 define(['N/record', 'N/search', 'N/format'], function(record, search, format) {
@@ -52,11 +46,11 @@ define(['N/record', 'N/search', 'N/format'], function(record, search, format) {
             const today = new Date();
             const customerLastCatalog = new Date(customerLastCatalogString) ? format.parse({
                 value: customerLastCatalogString,
-                type: format.Type.Date
+                type: format.Type.DATE
             }) : "";
             const daysSinceLastCatalog = (customerLastCatalogString == "") ? 366 : Math.round((today - customerLastCatalog) / 86400000);
 
-            if (customerName !== 'Amazon Online Sales' || daysSinceLastCatalog <= 365 || customerNoCatalog) {return;}
+            if ((daysSinceLastCatalog <= 365 || customerNoCatalog) && customerName !== 'Amazon Online Sales') {return;}
 
             //Go through each item to see what catalogs the order needs
             let uniqueCatalogs = new Set();
