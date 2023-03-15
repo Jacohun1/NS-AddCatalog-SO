@@ -11,7 +11,7 @@ define(['N/record', 'N/search', 'N/format'], function(record, search, format) {
     function updateLastCatalog(customerId, today) {
 
         const updateCatDate = record.submitFields({
-            type: record.Type.Customer,
+            type: record.Type.CUSTOMER,
             id: customerId,
             values: {custentity_last_order_date : today}
         })
