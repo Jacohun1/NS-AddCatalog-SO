@@ -5,7 +5,7 @@
  */
 
 // Load Necessary Modules
-define(['N/record', 'N/search', 'N/format'], function (record, search, format) {
+define(['N/record', 'N/search', 'N/format', 'N/log'], function (record, search, format, log) {
 
     // Update last catalog order date for the customer
     function updateLastCatalog(customerId, today) {
@@ -24,13 +24,17 @@ define(['N/record', 'N/search', 'N/format'], function (record, search, format) {
         const salesRepId = newRecord.getValue({ fieldId: 'salesrep' });
         const shipMethod = newRecord.getValue({ fieldId: 'shipmethod' });
     
-        const validSalesRepIds = [103159, 31538]; // Platt, Ben Yachty
+        const validSalesRepIds = [103159, 31538, 248532, 89168, 82602]; // Platt, Ben Yachty, GRAVY, Anna, IS
+      //Christa & Tarah should be exluded on official go live
         const minOrderTotal = 500;
         const validShipMethods = [982, 4602]; // Customer Pickup, Ground
     
         const salesRepMatch = validSalesRepIds.some(id => id == salesRepId);
         const shipMethodMatch = validShipMethods.some(method => method == shipMethod);
-    
+
+        log.debug('shouldRunScript', `orderTotal: ${orderTotal}, salesRepId: ${salesRepId}, shipMethod: ${shipMethod}`);
+        log.debug('shouldRunScript', `salesRepMatch: ${salesRepMatch}, shipMethodMatch: ${shipMethodMatch}`);
+      
         return salesRepMatch && orderTotal >= minOrderTotal && shipMethodMatch;
     }
 
@@ -129,7 +133,11 @@ define(['N/record', 'N/search', 'N/format'], function (record, search, format) {
         // Iterate through item results and add catalog fields to the set
         itemResults.forEach((itemResult) => {
             const catalogField = itemResult.getValue('custitem_catalog_field');
+            
+          // Only add the catalogField if it's not empty
+          if (catalogField) {
             catalogsOnSo.add(catalogField);
+        }
         });
     
         return catalogsOnSo;
@@ -180,11 +188,13 @@ define(['N/record', 'N/search', 'N/format'], function (record, search, format) {
 
     // Main function that runs before submitting the record
     function beforeSubmit(context) {
+        log.debug('beforeSubmit', 'Script triggered');
         const newRecord = context.newRecord;
 
         // Exit early if the script should not run
         if (!shouldRunScript(context, newRecord)) {
-            return;
+          log.debug('beforeSubmit', 'Script should not run, exiting early');  
+          return;
         }
 
         // Get customer and order information
@@ -198,7 +208,8 @@ define(['N/record', 'N/search', 'N/format'], function (record, search, format) {
         const daysSinceLastCatalog = getDaysSinceLastCatalog(customerLastCatalogString, today);
          // Skip the customer if conditions are met
         if (shouldSkipCustomer(customerName, daysSinceLastCatalog, customerNoCatalog)) {
-            return;
+          log.debug('beforeSubmit', `Skipping customer ${customerName}`);  
+          return;
         }
 
         // Retrieve catalog information and sales order items
@@ -207,7 +218,8 @@ define(['N/record', 'N/search', 'N/format'], function (record, search, format) {
 
         // Update the customer's last catalog order date if a catalog SKU is already in the sales order
         if (allCatalogSku.some((catSku) => salesOrderItems.includes(catSku))) {
-            updateLastCatalog(customerId, today);
+          log.debug('beforeSubmit', 'Catalog SKU found in sales order items, updating customer last catalog order date');  
+          updateLastCatalog(customerId, today);
             return;
         }
 
@@ -216,7 +228,8 @@ define(['N/record', 'N/search', 'N/format'], function (record, search, format) {
 
         // Exit early if no catalogs are found for the sales order items
         if (catalogsOnSo.size === 0) {
-            return;
+          log.debug('beforeSubmit', 'No catalogs found for sales order items, exiting early');  
+          return;
         }
 
         // Create a list of catalogs to add to the sales order
