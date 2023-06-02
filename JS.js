@@ -24,9 +24,9 @@ define(['N/record', 'N/search', 'N/format', 'N/log'], function (record, search, 
         const salesRepId = newRecord.getValue({ fieldId: 'salesrep' });
         const shipMethod = newRecord.getValue({ fieldId: 'shipmethod' });
     
-        const validSalesRepIds = [103159, 31538, 248532, 89168, 82602]; // Platt, Ben Yachty, GRAVY, Anna, IS
+        const validSalesRepIds = [103159, 31538, 248532, 89168, 82602, 104920, 9]; // Platt, Ben Yachty, GRAVY, Anna, IS, Texas, Sunny
       //Christa & Tarah should be exluded on official go live
-        const minOrderTotal = 500;
+        const minOrderTotal = 59;
         const validShipMethods = [982, 4602]; // Customer Pickup, Ground
     
         const salesRepMatch = validSalesRepIds.some(id => id == salesRepId);
@@ -72,24 +72,25 @@ define(['N/record', 'N/search', 'N/format', 'N/log'], function (record, search, 
     function getCatalogs() {
         const catalogSearch = search.create({
             type: 'customrecord_catalogs',
-            columns: ['name', 'custrecord_cat_prod_id', 'internalid'],
+            columns: ['name', 'custrecord_cat_prod_id', 'internalid', 'custrecord_min_price'],
             filters: [
                 ['isinactive', search.Operator.IS, false]
             ]
         });
-
+    
         const catalogSearchResults = catalogSearch.run().getRange({ start: 0, end: 100 });
-
+    
         let catalogDictionary = new Map();
         let allCatalogSku = [];
-
+    
         // Create a dictionary and a list of catalog SKUs
         for (const itemResult of catalogSearchResults) {
             const catSku = itemResult.getValue('custrecord_cat_prod_id');
             const catName = itemResult.getValue('name');
             const catRecordId = itemResult.getValue('internalid');
+            const catMinPrice = parseFloat(itemResult.getValue('custrecord_min_price')) || 0;
             allCatalogSku.push(catSku);
-            catalogDictionary.set(catRecordId, { catalogname: catName, catalogsku: catSku });
+            catalogDictionary.set(catRecordId, { catalogname: catName, catalogsku: catSku, minprice: catMinPrice });
         }
         return { catalogDictionary, allCatalogSku };
     }
@@ -146,14 +147,22 @@ define(['N/record', 'N/search', 'N/format', 'N/log'], function (record, search, 
     // Add catalogs to the sales order based on the catalog list and dictionary
     function addCatalogsToSalesOrder(newRecord, soCatalogList, catalogDictionary) {
         const lineCount = newRecord.getLineCount({ sublistId: 'item' });
+        const orderSubTotal = newRecord.getValue({ fieldId: 'subtotal' });
+        let soLineNumber = 0 //determines what line of the sales order the catalog should be added to
     
         // Iterate through the catalog list and add catalog items to the sales order
         for (let i = 0; i < soCatalogList.length; i++) {
-            const currentLine = lineCount + i;
             const catalogKey = soCatalogList[i];
             const catalogInfo = catalogDictionary.get(catalogKey);
             const currentCatalog = catalogInfo.catalogsku;
             const currentDescription = `${catalogInfo.catalogname} Catalog`;
+    
+            // Check min price against order subtotal
+            if (catalogInfo.minprice >= orderSubTotal) {
+                continue; // skip this catalog
+            }
+    
+            const currentLine = lineCount + soLineNumber;
     
             // Set catalog item values for the sales order line
             newRecord.setSublistValue({
@@ -183,7 +192,9 @@ define(['N/record', 'N/search', 'N/format', 'N/log'], function (record, search, 
                 line: currentLine,
                 value: currentDescription
             });
+            soLineNumber++;
         }
+        return soLineNumber;
     }
 
     // Main function that runs before submitting the record
@@ -236,10 +247,12 @@ define(['N/record', 'N/search', 'N/format', 'N/log'], function (record, search, 
         const soCatalogList = Array.from(catalogsOnSo);
 
         // Add catalogs to the sales order
-        addCatalogsToSalesOrder(newRecord, soCatalogList, catalogDictionary);
+        let catalogsAdded = addCatalogsToSalesOrder(newRecord, soCatalogList, catalogDictionary);
 
         // Update the customer's last catalog order date
-        updateLastCatalog(customerId, today);
+        if (catalogsAdded > 0){
+            updateLastCatalog(customerId, today);
+        }
     }
 
     // Export the beforeSubmit function
