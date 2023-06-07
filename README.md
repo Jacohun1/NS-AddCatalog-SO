@@ -24,7 +24,7 @@ The script should be triggered on the 'beforeSubmit' event of the 'Sales Order' 
 
 Please note that you may need to customize the script to fit your specific business requirements.
 
-##Setup
+## Setup
 - Create a new list for catalogs with the following custom attributes
  - "_cat_prod_id"
  - "_min_price"
