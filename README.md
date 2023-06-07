@@ -24,6 +24,13 @@ The script should be triggered on the 'beforeSubmit' event of the 'Sales Order' 
 
 Please note that you may need to customize the script to fit your specific business requirements.
 
+##Setup
+- Create a new list for catalogs with the following custom attributes
+ - "_cat_prod_id"
+ - "_min_price"
+- Create a new item field called: "_catalog_field"
+ - Validate the field uses the new catalog list
+
 ## Customization
 
 The script contains several constants that can be adjusted to fit your business needs:
