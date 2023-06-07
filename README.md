@@ -58,7 +58,3 @@ For support or any questions regarding this script, please contact the author or
 ## Contributing
 
 Contributions are welcome. Please submit a pull request with your proposed changes.
-
-## License
-
-This script is released under the [MIT License](https://opensource.org/licenses/MIT).
