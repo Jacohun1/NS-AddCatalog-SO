@@ -26,10 +26,10 @@ Please note that you may need to customize the script to fit your specific busin
 
 ## Setup
 - Create a new list for catalogs with the following custom attributes
- - "_cat_prod_id"
- - "_min_price"
+  - "_cat_prod_id"
+  - "_min_price"
 - Create a new item field called: "_catalog_field"
- - Validate the field uses the new catalog list
+  - Validate the field uses the new catalog list
 
 ## Customization
 
