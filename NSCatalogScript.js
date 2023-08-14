@@ -26,8 +26,8 @@ define(['N/record', 'N/search', 'N/format', 'N/log'], function (record, search, 
     
         const validSalesRepIds = [103159, 31538, 248532, 89168, 82602, 104920, 9]; // Platt, Ben Yachty, GRAVY, Anna, IS, Texas, Sunny
       //Christa & Tarah should be exluded on official go live
-        const minOrderTotal = 59;
-        const validShipMethods = [982, 4602]; // Customer Pickup, Ground
+        const minOrderTotal = 49;
+        const validShipMethods = [982, 4602, 2]; // Customer Pickup, UPS Ground, Fedex Ground
     
         const salesRepMatch = validSalesRepIds.some(id => id == salesRepId);
         const shipMethodMatch = validShipMethods.some(method => method == shipMethod);
@@ -61,11 +61,16 @@ define(['N/record', 'N/search', 'N/format', 'N/log'], function (record, search, 
         return Math.round((today - customerLastCatalog) / 86400000);
     }
 
-    // Determine if a customer should be skipped based on their name, days since last catalog, and customerNoCatalog flag
     function shouldSkipCustomer(customerName, daysSinceLastCatalog, customerNoCatalog) {
         const maxDaysSinceLastCatalog = 365;
 
-        return (daysSinceLastCatalog <= maxDaysSinceLastCatalog || customerNoCatalog) && customerName !== 'Amazon Online Sales';
+        if (customerNoCatalog){
+            return true;
+        } else if (customerName != 'Amazon Online Sales' && daysSinceLastCatalog <= maxDaysSinceLastCatalog){
+            return true;
+        } else {
+            return false;
+        }
     }
 
     // Retrieve catalog information from the system
